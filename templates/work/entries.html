@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Work Tracker - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-clock me-2"></i>Work Tracker</h1>
+        <p class="text-muted">Track your work hours and manage projects</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('work.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Add Work Entry
+        </a>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="in_progress" {{ 'selected' if status == 'in_progress' }}>In Progress</option>
+                    <option value="completed" {{ 'selected' if status == 'completed' }}>Completed</option>
+                    <option value="billed" {{ 'selected' if status == 'billed' }}>Billed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Project</label>
+                <select name="project" class="form-select">
+                    <option value="">All Projects</option>
+                    {% for proj in projects %}
+                    <option value="{{ proj }}" {{ 'selected' if project == proj }}>{{ proj }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Filter
+                    </button>
+                    <a href="{{ url_for('work.entries') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ entries.total }}</h3>
+                <p class="mb-0">Total Entries</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>Rs {{ "%.2f"|format(entries.items|sum(attribute='total_amount') or 0) }}</h3>
+                <p class="mb-0">Total Earnings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3>{{ entries.items|selectattr('work_status', 'equalto', 'in_progress')|list|length }}</h3>
+                <p class="mb-0">In Progress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>Rs {{ "%.2f"|format(entries.items|sum(attribute='remaining_amount') or 0) }}</h3>
+                <p class="mb-0">Total Remaining</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Work Entries Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Work Entries</h5>
+    </div>
+    <div class="card-body">
+        {% if entries.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Customer Phone</th>
+                        <th>Work Name</th>
+                        <th>Service Type</th>
+                        <th>Amount</th>
+                        <th>Paid Amount</th>
+                        <th>Remaining Amount</th>
+                        <th>Payment Status</th>
+                        <th>Work Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ entry.customer_name or 'N/A' }}</strong>
+                        </td>
+                        <td>
+                            {{ entry.customer_phone or 'N/A' }}
+                        </td>
+                        <td>
+                            <strong>{{ entry.project_name or 'N/A' }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ (entry.service_type or 'general').replace('_', ' ').title() }}</span>
+                        </td>
+                        <td>
+                            {% if entry.total_amount %}
+                            <strong>Rs {{ "%.2f"|format(entry.total_amount) }}</strong>
+                            {% else %}
+                            <span class="text-muted">Rs 0.00</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if entry.advance_amount and entry.advance_amount > 0 %}
+                            <strong class="text-success">Rs {{ "%.2f"|format(entry.advance_amount) }}</strong>
+                            {% else %}
+                            <span class="text-muted">Rs 0.00</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if entry.remaining_amount is not none %}
+                            <strong class="text-{{ 'success' if entry.remaining_amount == 0 else 'warning' }}">
+                                Rs {{ "%.2f"|format(entry.remaining_amount) }}
+                            </strong>
+                            {% else %}
+                            <span class="text-muted">Rs 0.00</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if entry.payment_status == 'paid' else 'warning' if entry.payment_status == 'partial' else 'danger' }}">
+                                {{ (entry.payment_status or 'pending').replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if entry.work_status == 'delivered' else 'info' if entry.work_status == 'completed' else 'warning' }}">
+                                {{ (entry.work_status or 'in_progress').replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('work.view', id=entry.id) }}" class="btn btn-outline-primary" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('work.edit', id=entry.id) }}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-outline-success" onclick="updatePayment({{ entry.id }})" title="Payment Update">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="updateWorkStatus({{ entry.id }})" title="Work Status Update">
+                                    <i class="fas fa-tasks"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteEntry({{ entry.id }})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if entries.pages and entries.pages > 1 %}
+        <nav aria-label="Work entries pagination">
+            <ul class="pagination justify-content-center">
+                {% if entries.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('work.entries', page=entries.prev_num, status=status, project=project) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in entries.iter_pages() %}
+                {% if page_num %}
+                {% if page_num != entries.page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('work.entries', page=page_num, status=status, project=project) }}">{{ page_num }}</a>
+                </li>
+                {% else %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if entries.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('work.entries', page=entries.next_num, status=status, project=project) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+            <h5>No Work Entries Found</h5>
+            <p class="text-muted">Start tracking your work time.</p>
+            <a href="{{ url_for('work.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add First Entry
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+function deleteEntry(entryId) {
+    if (confirm('Are you sure you want to delete this work entry?')) {
+        fetch(`/work/entries/${entryId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting entry');
+            }
+        })
+        .catch(error => {
+            alert('Error deleting entry: ' + error.message);
+        });
+    }
+}
+
+function updatePayment(entryId) {
+    // Get current entry data
+    fetch(`/work/entries/${entryId}/payment-info`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const currentPaid = data.paid_amount || 0;
+                const totalAmount = data.total_amount || 0;
+                const remaining = data.remaining_amount || 0;
+
+                const newPayment = prompt(
+                    `Current Payment Status:\n` +
+                    `Total Amount: Rs ${totalAmount.toFixed(2)}\n` +
+                    `Already Paid: Rs ${currentPaid.toFixed(2)}\n` +
+                    `Remaining: Rs ${remaining.toFixed(2)}\n\n` +
+                    `Enter additional payment amount:`
+                );
+
+                if (newPayment !== null && !isNaN(newPayment) && parseFloat(newPayment) >= 0) {
+                    const paymentAmount = parseFloat(newPayment);
+
+                    fetch(`/work/entries/${entryId}/update-payment`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            payment_amount: paymentAmount
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            alert('Payment updated successfully!');
+                            location.reload();
+                        } else {
+                            alert('Error updating payment: ' + result.message);
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error updating payment: ' + error.message);
+                    });
+                }
+            } else {
+                alert('Error getting payment info: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error getting payment info: ' + error.message);
+        });
+}
+
+function updateWorkStatus(entryId) {
+    // Get current work status
+    fetch(`/work/entries/${entryId}/work-status-info`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const currentStatus = data.work_status || 'pending';
+
+                const statusOptions = [
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'in_progress', label: 'In Progress' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'delivered', label: 'Delivered' }
+                ];
+
+                let optionsText = statusOptions.map((option, index) =>
+                    `${index + 1}. ${option.label}${option.value === currentStatus ? ' (Current)' : ''}`
+                ).join('\n');
+
+                const choice = prompt(
+                    `Current Work Status: ${currentStatus.replace('_', ' ').toUpperCase()}\n\n` +
+                    `Select new work status:\n${optionsText}\n\n` +
+                    `Enter choice (1-4):`
+                );
+
+                if (choice !== null && !isNaN(choice)) {
+                    const choiceIndex = parseInt(choice) - 1;
+                    if (choiceIndex >= 0 && choiceIndex < statusOptions.length) {
+                        const newStatus = statusOptions[choiceIndex].value;
+
+                        fetch(`/work/entries/${entryId}/update-work-status`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                work_status: newStatus
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                alert('Work status updated successfully!');
+                                location.reload();
+                            } else {
+                                alert('Error updating work status: ' + result.message);
+                            }
+                        })
+                        .catch(error => {
+                            alert('Error updating work status: ' + error.message);
+                        });
+                    } else {
+                        alert('Invalid choice. Please select 1-4.');
+                    }
+                }
+            } else {
+                alert('Error getting work status info: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error getting work status info: ' + error.message);
+        });
+}
+</script>
+{% endblock %}

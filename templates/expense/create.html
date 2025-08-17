@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Add Expense - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-plus me-2"></i>Add New Expense</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('expense.expenses') }}">Expenses</a></li>
+                <li class="breadcrumb-item active">Add Expense</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Expense Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="title" class="form-label">Expense Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                            <div class="invalid-feedback">Please provide an expense title.</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">Amount (₹) *</label>
+                            <input type="number" class="form-control" id="amount" name="amount" min="0.01" step="0.01" required>
+                            <div class="invalid-feedback">Please provide a valid amount.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">Category *</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a category.</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Date *</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
+                            <div class="invalid-feedback">Please provide a date.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Optional description of the expense..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="receipt" class="form-label">Receipt (Optional)</label>
+                        <input type="file" class="form-control" id="receipt" name="receipt" accept="image/*,.pdf">
+                        <div class="form-text">Upload receipt image or PDF (Max 5MB)</div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-save me-1"></i>Save Expense
+                            </button>
+                            <a href="{{ url_for('expense.expenses') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Add Categories -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">Common Categories</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in categories[:8] %}
+                    <div class="col-md-3 mb-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="selectCategory('{{ category }}')">
+                            {{ category }}
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set today's date as default
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    if (!dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+    
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+
+function selectCategory(category) {
+    document.getElementById('category').value = category;
+}
+
+// Auto-format amount
+document.getElementById('amount').addEventListener('blur', function() {
+    if (this.value) {
+        this.value = parseFloat(this.value).toFixed(2);
+    }
+});
+</script>
+{% endblock %}

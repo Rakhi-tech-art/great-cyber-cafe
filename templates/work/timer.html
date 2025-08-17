@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Work Timer - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-stopwatch me-2"></i>Work Timer</h1>
+        <p class="text-muted">Start and manage your work timers</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('work.entries') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-list me-1"></i>View All Entries
+        </a>
+    </div>
+</div>
+
+{% if active_timer %}
+<!-- Active Timer -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-play me-2"></i>Active Timer</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>{{ active_timer.project_name }}</h4>
+                        <p class="text-muted">{{ active_timer.task_description }}</p>
+                        <p><strong>Started:</strong> {{ active_timer.start_time.strftime('%I:%M %p on %B %d, %Y') }}</p>
+                        <p><strong>Rate:</strong> ₹{{ "%.2f"|format(active_timer.hourly_rate) }}/hour</p>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <div class="mb-3">
+                            <h2 id="timerDisplay" class="text-success">00:00:00</h2>
+                            <p class="text-muted">Elapsed Time</p>
+                        </div>
+                        <div class="mb-3">
+                            <h4 id="amountDisplay" class="text-primary">₹0.00</h4>
+                            <p class="text-muted">Current Amount</p>
+                        </div>
+                        <button class="btn btn-danger btn-lg" onclick="stopActiveTimer()">
+                            <i class="fas fa-stop me-1"></i>Stop Timer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Start Timer -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Start New Timer</h5>
+            </div>
+            <div class="card-body">
+                <form id="quickTimerForm" class="needs-validation" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="project_name" class="form-label">Project Name *</label>
+                            <input type="text" class="form-control" id="project_name" name="project_name" required>
+                            <div class="invalid-feedback">Please provide a project name.</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="hourly_rate" class="form-label">Hourly Rate (₹) *</label>
+                            <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" min="0.01" step="0.01" value="500" required>
+                            <div class="invalid-feedback">Please provide an hourly rate.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="task_description" class="form-label">Task Description *</label>
+                        <textarea class="form-control" id="task_description" name="task_description" rows="2" required placeholder="What are you working on?"></textarea>
+                        <div class="invalid-feedback">Please provide a task description.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-lg" {% if active_timer %}disabled{% endif %}>
+                        <i class="fas fa-play me-1"></i>Start Timer
+                    </button>
+                    
+                    {% if active_timer %}
+                    <p class="text-muted mt-2">Stop the current timer before starting a new one.</p>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('work.create') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-1"></i>Manual Entry
+                    </a>
+                    <a href="{{ url_for('work.entries') }}" class="btn btn-outline-info">
+                        <i class="fas fa-list me-1"></i>View All Entries
+                    </a>
+                    <a href="{{ url_for('work.reports') }}" class="btn btn-outline-success">
+                        <i class="fas fa-chart-bar me-1"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Recent Projects</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setProject('Web Development')">
+                        Web Development
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setProject('Mobile App')">
+                        Mobile App
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setProject('Consulting')">
+                        Consulting
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setProject('Design Work')">
+                        Design Work
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if active_timer %}
+// Timer functionality for active timer
+let startTime = new Date('{{ active_timer.start_time.isoformat() }}');
+let hourlyRate = {{ active_timer.hourly_rate }};
+
+function updateTimer() {
+    const now = new Date();
+    const elapsed = now - startTime;
+    
+    const hours = Math.floor(elapsed / (1000 * 60 * 60));
+    const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+    
+    const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    document.getElementById('timerDisplay').textContent = timeString;
+    
+    const totalHours = elapsed / (1000 * 60 * 60);
+    const amount = totalHours * hourlyRate;
+    document.getElementById('amountDisplay').textContent = `₹${amount.toFixed(2)}`;
+}
+
+// Update timer every second
+setInterval(updateTimer, 1000);
+updateTimer(); // Initial call
+
+function stopActiveTimer() {
+    if (confirm('Stop the current timer?')) {
+        fetch(`/work/entries/{{ active_timer.id }}/stop`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Timer stopped successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error stopping timer: ' + error.message);
+        });
+    }
+}
+{% endif %}
+
+// Quick timer form
+document.getElementById('quickTimerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!this.checkValidity()) {
+        this.classList.add('was-validated');
+        return;
+    }
+    
+    const formData = new FormData(this);
+    
+    fetch('/work/entries/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error starting timer');
+        }
+    })
+    .catch(error => {
+        alert('Error starting timer: ' + error.message);
+    });
+});
+
+function setProject(projectName) {
+    document.getElementById('project_name').value = projectName;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Create Bill - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-plus me-2"></i>Create New Bill</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('billing.bills') }}">Bills</a></li>
+                <li class="breadcrumb-item active">Create</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<form method="POST" class="needs-validation" novalidate>
+    <div class="row">
+        <!-- Customer Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="customer_name" class="form-label">Customer Name *</label>
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                        <div class="invalid-feedback">Please provide a customer name.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="customer_email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="customer_email" name="customer_email">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="customer_contact" class="form-label">Phone/WhatsApp Number</label>
+                        <input type="tel" class="form-control" id="customer_contact" name="customer_contact" placeholder="Enter phone or WhatsApp number">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bill Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Bill Date</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="bill_date" class="form-label">Date & Time</label>
+                        <input type="datetime-local" class="form-control" id="bill_date" name="bill_date" value="{{ current_datetime }}" readonly>
+                        <small class="form-text text-muted">Bill date and time are automatically set to now</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="advance_amount" class="form-label">Advance/Paid Amount (Rs)</label>
+                        <input type="number" class="form-control" id="advance_amount" name="advance_amount" value="0" min="0" step="0.01" placeholder="0.00">
+                        <small class="form-text text-muted">Enter any advance payment received</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bill Items -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Bill Items</h5>
+            <button type="button" class="btn btn-primary btn-sm" id="addRow">
+                <i class="fas fa-plus me-1"></i>Add Item
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="billItemsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th width="120">Quantity</th>
+                            <th width="120">Rate (Rs)</th>
+                            <th width="120">Total (Rs)</th>
+                            <th width="80">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <input type="text" class="form-control" name="items[0][description]" placeholder="Item description" required>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control quantity" name="items[0][quantity]" value="1" min="0.01" step="0.01" required>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control rate" name="items[0][rate]" min="0.01" step="0.01" placeholder="0.00" required>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control total" name="items[0][total]" readonly>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm remove-row">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bill Summary -->
+    <div class="row">
+        <div class="col-md-8"></div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Bill Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Total Amount:</strong></div>
+                        <div class="col-6 text-end"><strong>Rs <span id="totalAmountDisplay">0.00</span></strong></div>
+                        <input type="hidden" id="totalAmount" name="total_amount" value="0">
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Advance/Paid:</div>
+                        <div class="col-6 text-end">Rs <span id="advanceAmountDisplay">0.00</span></div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6"><strong>Remaining Amount:</strong></div>
+                        <div class="col-6 text-end"><strong class="text-danger">Rs <span id="remainingAmountDisplay">0.00</span></strong></div>
+                        <input type="hidden" id="remainingAmount" name="remaining_amount" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col">
+            <button type="submit" class="btn btn-primary me-2">
+                <i class="fas fa-save me-1"></i>Create Bill
+            </button>
+            <a href="{{ url_for('billing.bills') }}" class="btn btn-secondary">
+                <i class="fas fa-times me-1"></i>Cancel
+            </a>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enhanced bill calculation with remaining amount
+function calculateBillTotal() {
+    const totalInputs = document.querySelectorAll('.total');
+    let total = 0;
+
+    totalInputs.forEach(function(input) {
+        total += parseFloat(input.value) || 0;
+    });
+
+    const advanceAmount = parseFloat(document.getElementById('advance_amount').value) || 0;
+    const remainingAmount = Math.max(0, total - advanceAmount);
+
+    // Update displays
+    document.getElementById('totalAmountDisplay').textContent = total.toFixed(2);
+    document.getElementById('advanceAmountDisplay').textContent = advanceAmount.toFixed(2);
+    document.getElementById('remainingAmountDisplay').textContent = remainingAmount.toFixed(2);
+
+    // Update hidden inputs
+    document.getElementById('totalAmount').value = total.toFixed(2);
+    document.getElementById('remainingAmount').value = remainingAmount.toFixed(2);
+
+    // Change color based on remaining amount
+    const remainingDisplay = document.getElementById('remainingAmountDisplay');
+    if (remainingAmount > 0) {
+        remainingDisplay.parentElement.className = 'col-6 text-end text-danger';
+    } else {
+        remainingDisplay.parentElement.className = 'col-6 text-end text-success';
+    }
+}
+
+// Initialize calculation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateBillTotal();
+
+    // Add event listener for advance amount changes
+    document.getElementById('advance_amount').addEventListener('input', calculateBillTotal);
+});
+</script>
+{% endblock %}

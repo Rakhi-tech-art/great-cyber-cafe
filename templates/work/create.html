@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Add Work Entry - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-plus me-2"></i>Add Work Entry</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('work.entries') }}">Work Tracker</a></li>
+                <li class="breadcrumb-item active">Add Entry</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Work Entry Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <!-- Customer Information Section -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Customer Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="customer_name" class="form-label">Customer Name *</label>
+                                    <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                                    <div class="invalid-feedback">Please provide customer name.</div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="customer_phone" class="form-label">Customer Phone *</label>
+                                    <input type="tel" class="form-control" id="customer_phone" name="customer_phone" pattern="[0-9]{10}" required>
+                                    <div class="invalid-feedback">Please provide a valid 10-digit phone number.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Service Information Section -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>Service Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="service_type" class="form-label">Service Type *</label>
+                                    <select class="form-select" id="service_type" name="service_type" required>
+                                        <option value="">Select Service Type</option>
+                                        <option value="passport">Passport Application</option>
+                                        <option value="aadhaar">Aadhaar Card Services</option>
+                                        <option value="pan">PAN Card Services</option>
+                                        <option value="voter_id">Voter ID Card</option>
+                                        <option value="driving_license">Driving License</option>
+                                        <option value="ration_card">Ration Card</option>
+                                        <option value="birth_certificate">Birth Certificate</option>
+                                        <option value="death_certificate">Death Certificate</option>
+                                        <option value="income_certificate">Income Certificate</option>
+                                        <option value="caste_certificate">Caste Certificate</option>
+                                        <option value="domicile_certificate">Domicile Certificate</option>
+                                        <option value="bank_account">Bank Account Opening</option>
+                                        <option value="insurance">Insurance Services</option>
+                                        <option value="online_form">Online Form Filling</option>
+                                        <option value="printing">Printing Services</option>
+                                        <option value="photocopying">Photocopying</option>
+                                        <option value="scanning">Scanning Services</option>
+                                        <option value="computer_training">Computer Training</option>
+                                        <option value="internet_browsing">Internet Browsing</option>
+                                        <option value="other">Other Services</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a service type.</div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="project_name" class="form-label">Project/Work Name *</label>
+                                    <input type="text" class="form-control" id="project_name" name="project_name" required>
+                                    <div class="invalid-feedback">Please provide a project name.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Billing Information Section -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-rupee-sign me-2"></i>Billing Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="hourly_rate" class="form-label">Rate (₹) *</label>
+                                    <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" min="0.01" step="0.01" value="100" required>
+                                    <div class="invalid-feedback">Please provide a rate.</div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="advance_amount" class="form-label">Advance Amount (₹)</label>
+                                    <input type="number" class="form-control" id="advance_amount" name="advance_amount" min="0" step="0.01" value="0">
+                                    <div class="form-text">Amount paid in advance</div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="work_status" class="form-label">Work Status</label>
+                                    <select class="form-select" id="work_status" name="work_status">
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="delivered">Delivered</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Service Summary -->
+                    <div class="card bg-primary text-white mb-3">
+                        <div class="card-body">
+                            <h6><i class="fas fa-info-circle me-2"></i>Service Summary</h6>
+                            <div id="calculation" class="text-white">
+                                Select service type and enter rate to see summary.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-save me-1"></i>Save Work Entry
+                            </button>
+                            <a href="{{ url_for('work.entries') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Start Options -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">Quick Start Options</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <button type="button" class="btn btn-outline-info" onclick="setCommonProject()">
+                        <i class="fas fa-briefcase me-1"></i>Use Common Project
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+
+    // Calculate amount when rate or advance changes
+    const hourlyRateInput = document.getElementById('hourly_rate');
+    const advanceAmountInput = document.getElementById('advance_amount');
+
+    function updateCalculation() {
+        const hourlyRate = parseFloat(hourlyRateInput.value) || 0;
+        const advanceAmount = parseFloat(advanceAmountInput.value) || 0;
+
+        document.getElementById('calculation').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Hourly Rate:</strong> Rs ${hourlyRate.toFixed(2)}<br>
+                    <strong>Service Type:</strong> ${document.getElementById('service_type').selectedOptions[0]?.text || 'Not selected'}
+                </div>
+                <div class="col-md-6">
+                    <strong>Advance Paid:</strong> Rs ${advanceAmount.toFixed(2)}<br>
+                    <strong>Status:</strong> <span class="text-info">Ready to start work</span>
+                </div>
+            </div>
+        `;
+    }
+
+    hourlyRateInput.addEventListener('input', updateCalculation);
+    advanceAmountInput.addEventListener('input', updateCalculation);
+    document.getElementById('service_type').addEventListener('change', updateCalculation);
+
+    // Auto-fill project name based on service type
+    const serviceTypeSelect = document.getElementById('service_type');
+    const projectNameInput = document.getElementById('project_name');
+
+    serviceTypeSelect.addEventListener('change', function() {
+        const serviceType = this.value;
+        const serviceNames = {
+            'passport': 'Passport Application Service',
+            'aadhaar': 'Aadhaar Card Service',
+            'pan': 'PAN Card Service',
+            'voter_id': 'Voter ID Card Service',
+            'driving_license': 'Driving License Service',
+            'ration_card': 'Ration Card Service',
+            'birth_certificate': 'Birth Certificate Service',
+            'death_certificate': 'Death Certificate Service',
+            'income_certificate': 'Income Certificate Service',
+            'caste_certificate': 'Caste Certificate Service',
+            'domicile_certificate': 'Domicile Certificate Service',
+            'bank_account': 'Bank Account Opening',
+            'insurance': 'Insurance Service',
+            'online_form': 'Online Form Filling',
+            'printing': 'Printing Service',
+            'photocopying': 'Photocopying Service',
+            'scanning': 'Scanning Service',
+            'computer_training': 'Computer Training',
+            'internet_browsing': 'Internet Browsing',
+            'other': 'Other Service'
+        };
+
+        if (serviceNames[serviceType]) {
+            projectNameInput.value = serviceNames[serviceType];
+        }
+    });
+
+    // Initial calculation
+    updateCalculation();
+});
+
+function setCommonProject() {
+    // Common project names for cyber cafe services
+    const commonProjects = [
+        'Passport Application Service',
+        'Aadhaar Card Service',
+        'PAN Card Service',
+        'Voter ID Card Service',
+        'Driving License Service',
+        'Bank Account Opening',
+        'Insurance Service',
+        'Online Form Filling',
+        'Printing Service',
+        'Computer Training',
+        'Internet Browsing'
+    ];
+
+    const projectList = commonProjects.map((project, index) => `${index + 1}. ${project}`).join('\n');
+    const selection = prompt(`Choose a common project by number or enter custom name:\n\n${projectList}\n\nEnter number (1-${commonProjects.length}) or custom project name:`);
+
+    if (selection) {
+        const projectIndex = parseInt(selection) - 1;
+        if (projectIndex >= 0 && projectIndex < commonProjects.length) {
+            document.getElementById('project_name').value = commonProjects[projectIndex];
+        } else {
+            document.getElementById('project_name').value = selection;
+        }
+    }
+}
+</script>
+{% endblock %}

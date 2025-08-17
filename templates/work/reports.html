@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Work Reports - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-chart-bar me-2"></i>Work Reports</h1>
+        <p class="text-muted">Analyze your work performance and earnings</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('work.entries') }}" class="btn btn-outline-primary">
+            <i class="fas fa-list me-1"></i>Back to Entries
+        </a>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Filter Reports</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Project</label>
+                <select name="project" class="form-select">
+                    <option value="">All Projects</option>
+                    {% for proj in projects %}
+                    <option value="{{ proj }}" {{ 'selected' if selected_project == proj }}>{{ proj }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Generate Report
+                    </button>
+                    <a href="{{ url_for('work.reports') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ entries|length }}</h3>
+                <p class="mb-0">Total Entries</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>{{ "%.1f"|format(total_hours) }}h</h3>
+                <p class="mb-0">Total Hours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ "%.2f"|format(total_amount) }}</h3>
+                <p class="mb-0">Total Earnings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ "%.2f"|format(total_amount / total_hours if total_hours > 0 else 0) }}</h3>
+                <p class="mb-0">Avg Rate/Hour</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Statistics -->
+{% if project_stats %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Project Breakdown</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Entries</th>
+                        <th>Hours</th>
+                        <th>Amount</th>
+                        <th>Avg Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project, stats in project_stats.items() %}
+                    <tr>
+                        <td><strong>{{ project }}</strong></td>
+                        <td>{{ stats.entries }}</td>
+                        <td>{{ "%.1f"|format(stats.hours) }}h</td>
+                        <td>₹{{ "%.2f"|format(stats.amount) }}</td>
+                        <td>₹{{ "%.2f"|format(stats.amount / stats.hours if stats.hours > 0 else 0) }}/hr</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Detailed Entries -->
+{% if entries %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Work Entries Detail</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Service</th>
+                        <th>Project</th>
+                        <th>Date</th>
+                        <th>Duration</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr>
+                        <td>
+                            <strong>{{ entry.customer_name or 'N/A' }}</strong><br>
+                            <small class="text-muted">{{ entry.customer_phone or 'N/A' }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ (entry.service_type or 'general').replace('_', ' ').title() }}</span>
+                        </td>
+                        <td>{{ entry.project_name }}</td>
+                        <td>{{ entry.start_time.strftime('%m/%d/%Y') }}</td>
+                        <td>
+                            {% if entry.duration_minutes %}
+                            {{ "%.1f"|format(entry.duration_minutes / 60) }}h
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>₹{{ "%.2f"|format(entry.hourly_rate) }}/hr</td>
+                        <td>
+                            <strong>₹{{ "%.2f"|format(entry.total_amount or 0) }}</strong>
+                            {% if entry.advance_amount and entry.advance_amount > 0 %}
+                            <br><small class="text-success">Advance: ₹{{ "%.2f"|format(entry.advance_amount) }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if entry.work_status == 'delivered' else 'info' if entry.work_status == 'completed' else 'warning' }}">
+                                {{ (entry.work_status or 'in_progress').replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center">
+        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+        <h5>No Work Entries Found</h5>
+        <p class="text-muted">No completed work entries match your filter criteria.</p>
+        <a href="{{ url_for('work.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Add Work Entry
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date range if not specified
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (!startDateInput.value) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        startDateInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+    }
+    
+    if (!endDateInput.value) {
+        const today = new Date();
+        endDateInput.value = today.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

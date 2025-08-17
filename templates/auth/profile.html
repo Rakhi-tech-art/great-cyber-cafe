@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-user me-2"></i>My Profile</h1>
+        <p class="text-muted">Manage your profile information and preferences</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Profile Information -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ current_user.username }}" required>
+                            <div class="invalid-feedback">Please provide a username.</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ current_user.email }}" required>
+                            <div class="invalid-feedback">Please provide a valid email address.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   value="{{ current_user.phone or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <input type="text" class="form-control" id="role" 
+                                   value="{{ current_user.role.title() }}" readonly>
+                            <div class="form-text">Your account role cannot be changed.</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6>Change Password</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current_password" name="current_password">
+                            <div class="form-text">Leave blank to keep current password</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" minlength="6">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-save me-1"></i>Update Profile
+                            </button>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Summary -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Profile Summary</h6>
+            </div>
+            <div class="card-body text-center">
+                {% if current_user.profile_photo %}
+                <img src="{{ url_for('static', filename=current_user.profile_photo.replace('static/', '')) }}" 
+                     class="img-fluid rounded-circle mb-3" alt="Profile Photo" 
+                     style="width: 100px; height: 100px; object-fit: cover;">
+                {% else %}
+                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-3" 
+                     style="width: 100px; height: 100px; font-size: 2.5rem;">
+                    {{ current_user.username[0].upper() }}
+                </div>
+                {% endif %}
+                
+                <h5>{{ current_user.username }}</h5>
+                <p class="text-muted">{{ current_user.email }}</p>
+                <p>
+                    <span class="badge bg-{{ 'danger' if current_user.role == 'admin' else 'primary' }}">
+                        {{ current_user.role.title() }}
+                    </span>
+                </p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Account Information</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Member Since:</strong><br>{{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                <p><strong>Account Status:</strong><br>
+                    <span class="badge bg-{{ 'success' if current_user.is_active else 'secondary' }}">
+                        {{ 'Active' if current_user.is_active else 'Inactive' }}
+                    </span>
+                </p>
+                <p><strong>Theme:</strong><br>{{ current_user.theme.title() if current_user.theme else 'Light' }}</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Quick Stats</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-primary">{{ current_user.bills|length }}</h4>
+                        <small>Bills</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ current_user.expenses|length }}</h4>
+                        <small>Expenses</small>
+                    </div>
+                </div>
+                <div class="row text-center mt-2">
+                    <div class="col-12">
+                        <h4 class="text-info">{{ current_user.work_entries|length }}</h4>
+                        <small>Work Entries</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const newPasswordField = document.getElementById('new_password');
+    const confirmPasswordField = document.getElementById('confirm_password');
+    const currentPasswordField = document.getElementById('current_password');
+    
+    // Password validation
+    function validatePasswords() {
+        const newPassword = newPasswordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        const currentPassword = currentPasswordField.value;
+        
+        // If new password is provided, current password is required
+        if (newPassword && !currentPassword) {
+            currentPasswordField.setCustomValidity('Current password is required to set new password');
+        } else {
+            currentPasswordField.setCustomValidity('');
+        }
+        
+        // If new password is provided, confirm password must match
+        if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+            confirmPasswordField.setCustomValidity("Passwords don't match");
+        } else {
+            confirmPasswordField.setCustomValidity('');
+        }
+        
+        // If confirm password is provided, new password is required
+        if (confirmPassword && !newPassword) {
+            newPasswordField.setCustomValidity('New password is required');
+        } else if (!confirmPassword && newPassword) {
+            confirmPasswordField.setCustomValidity('Please confirm your new password');
+        }
+    }
+    
+    newPasswordField.addEventListener('input', validatePasswords);
+    confirmPasswordField.addEventListener('input', validatePasswords);
+    currentPasswordField.addEventListener('input', validatePasswords);
+    
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        validatePasswords();
+        
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

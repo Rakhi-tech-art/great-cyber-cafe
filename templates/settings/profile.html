@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Settings - Smart Billing System{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-photo-container {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-photo-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.profile-photo-container:hover .profile-photo-overlay {
+    opacity: 1;
+}
+
+.photo-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.photo-upload-area:hover {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+}
+
+.photo-upload-area.dragover {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+    transform: scale(1.02);
+}
+
+.btn-photo-action {
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-photo-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-user me-2"></i>Profile Settings</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('settings.settings') }}">Settings</a></li>
+                <li class="breadcrumb-item active">Profile</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Settings Navigation -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Settings Menu</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('settings.profile_settings') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-user me-2"></i>Profile Settings
+                </a>
+                <a href="{{ url_for('settings.password_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-lock me-2"></i>Password & Security
+                </a>
+                <a href="{{ url_for('settings.appearance_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-palette me-2"></i>Appearance
+                </a>
+                <a href="{{ url_for('settings.notification_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </a>
+                <a href="{{ url_for('settings.account_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-cog me-2"></i>Account Settings
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Form -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Update Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <div class="row">
+                        <!-- Profile Photo Section -->
+                        <div class="col-md-4 text-center mb-4">
+                            <!-- Current Photo Display -->
+                            <div class="mb-4">
+                                <div class="profile-photo-container">
+                                    {% if current_user.profile_photo %}
+                                    <img id="profilePreview" src="{{ url_for('settings.uploaded_file', filename=current_user.profile_photo.split('/')[-1]) }}"
+                                         class="img-fluid rounded-circle border shadow" alt="Profile Photo"
+                                         style="width: 150px; height: 150px; object-fit: cover;"
+                                         onerror="this.style.display='none'; document.getElementById('profileFallback').style.display='flex';">
+                                    <div class="profile-photo-overlay">
+                                        <i class="fas fa-camera text-white"></i>
+                                    </div>
+                                    <!-- Fallback for when image fails to load -->
+                                    <div id="profileFallback" class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white border shadow mx-auto"
+                                         style="width: 150px; height: 150px; font-size: 3rem; {% if current_user.profile_photo %}display: none;{% endif %}">
+                                        {{ current_user.username[0].upper() }}
+                                    </div>
+                                    {% else %}
+                                    <div id="profilePreview" class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white border shadow mx-auto"
+                                         style="width: 150px; height: 150px; font-size: 3rem;">
+                                        {{ current_user.username[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mt-2">
+                                    <h6 class="mb-0">{{ current_user.username }}</h6>
+                                    <small class="text-muted">{{ current_user.role.title() }}</small>
+                                </div>
+                            </div>
+
+                            <!-- Photo Upload Area -->
+                            <div class="photo-upload-area mb-3">
+                                <div class="d-grid gap-2">
+                                    <label for="profile_photo" class="btn btn-primary btn-photo-action">
+                                        <i class="fas fa-camera me-2"></i>
+                                        {% if current_user.profile_photo %}Change Photo{% else %}Upload Photo{% endif %}
+                                    </label>
+                                    <input type="file" class="d-none" id="profile_photo" name="profile_photo"
+                                           accept="image/*" onchange="previewImage(this)">
+
+                                    {% if current_user.profile_photo %}
+                                    <button type="button" class="btn btn-outline-danger btn-photo-action" onclick="deletePhoto()">
+                                        <i class="fas fa-trash me-2"></i>Remove Photo
+                                    </button>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Photo Guidelines:</strong><br>
+                                        • Square images work best<br>
+                                        • JPG, PNG, GIF formats<br>
+                                        • Maximum size: 5MB<br>
+                                        • Minimum: 200x200 pixels
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Profile Information -->
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           value="{{ current_user.username }}" required>
+                                    <div class="invalid-feedback">Please provide a username.</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ current_user.email }}" required>
+                                    <div class="invalid-feedback">Please provide a valid email address.</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" 
+                                           value="{{ current_user.phone or '' }}">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="role" class="form-label">Role</label>
+                                    <input type="text" class="form-control" id="role" 
+                                           value="{{ current_user.role.title() }}" readonly>
+                                    <div class="form-text">Contact admin to change your role.</div>
+                                </div>
+                                
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">Account Information</label>
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <p class="mb-1"><strong>Member since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                                            <p class="mb-1"><strong>Account Status:</strong> 
+                                                <span class="badge bg-{{ 'success' if current_user.is_active else 'secondary' }}">
+                                                    {{ 'Active' if current_user.is_active else 'Inactive' }}
+                                                </span>
+                                            </p>
+                                            <p class="mb-0"><strong>Current Theme:</strong> 
+                                                <span class="badge bg-info">{{ current_user.theme.title() }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('settings.settings') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            input.value = '';
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Please select a valid image file (JPG, PNG, or GIF)');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePreview');
+            const fallback = document.getElementById('profileFallback');
+            const previewContainer = preview.parentNode;
+
+            // Hide fallback if it's showing
+            if (fallback) {
+                fallback.style.display = 'none';
+            }
+
+            // If preview is currently an image, update its src
+            if (preview && preview.tagName === 'IMG') {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            } else {
+                // Create new image element
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'img-fluid rounded-circle border shadow';
+                img.style.width = '150px';
+                img.style.height = '150px';
+                img.style.objectFit = 'cover';
+                img.alt = 'Profile Photo Preview';
+                img.id = 'profilePreview';
+                img.onerror = function() {
+                    this.style.display = 'none';
+                    if (fallback) fallback.style.display = 'flex';
+                };
+
+                // Replace current preview
+                if (preview) {
+                    previewContainer.replaceChild(img, preview);
+                } else {
+                    previewContainer.appendChild(img);
+                }
+            }
+
+            // Update buttons - show delete button and change text
+            updatePhotoButtons(true);
+        };
+
+        reader.readAsDataURL(file);
+    }
+}
+
+function deletePhoto() {
+    if (confirm('Are you sure you want to delete your profile photo? This action cannot be undone.')) {
+        // Show loading state
+        const deleteBtn = document.querySelector('button[onclick="deletePhoto()"]');
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+        deleteBtn.disabled = true;
+
+        // Send delete request
+        fetch('{{ url_for("settings.delete_profile_photo") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI to show no photo
+                const profilePreview = document.getElementById('profilePreview');
+                const profileFallback = document.getElementById('profileFallback');
+
+                if (profilePreview && profilePreview.tagName === 'IMG') {
+                    profilePreview.style.display = 'none';
+                }
+                if (profileFallback) {
+                    profileFallback.style.display = 'flex';
+                }
+
+                // Update buttons
+                updatePhotoButtons(false);
+
+                // Show success message
+                showAlert('success', data.message);
+            } else {
+                throw new Error(data.message || 'Failed to delete photo');
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'Error deleting photo: ' + error.message);
+            deleteBtn.innerHTML = originalText;
+            deleteBtn.disabled = false;
+        });
+    }
+}
+
+function updatePhotoButtons(hasPhoto) {
+    const uploadLabel = document.querySelector('label[for="profile_photo"]');
+    const deleteButton = document.querySelector('button[onclick="deletePhoto()"]');
+
+    if (hasPhoto) {
+        uploadLabel.innerHTML = '<i class="fas fa-camera me-2"></i>Change Photo';
+        if (deleteButton) {
+            deleteButton.style.display = 'block';
+            deleteButton.innerHTML = '<i class="fas fa-trash me-2"></i>Remove Photo';
+            deleteButton.disabled = false;
+        }
+    } else {
+        uploadLabel.innerHTML = '<i class="fas fa-camera me-2"></i>Upload Photo';
+        if (deleteButton) {
+            deleteButton.style.display = 'none';
+        }
+    }
+}
+
+function showAlert(type, message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    // Insert at the top of the card body
+    const cardBody = document.querySelector('.card-body');
+    cardBody.insertBefore(alertDiv, cardBody.firstChild);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+function resetToDefaultAvatar() {
+    const preview = document.getElementById('profilePreview');
+    const previewContainer = preview.parentNode;
+
+    // Create default avatar
+    const defaultAvatar = document.createElement('div');
+    defaultAvatar.id = 'profilePreview';
+    defaultAvatar.className = 'bg-primary rounded-circle d-flex align-items-center justify-content-center text-white border shadow mx-auto';
+    defaultAvatar.style.width = '150px';
+    defaultAvatar.style.height = '150px';
+    defaultAvatar.style.fontSize = '3rem';
+    defaultAvatar.textContent = '{{ current_user.username[0].upper() }}';
+
+    // Replace current preview
+    previewContainer.replaceChild(defaultAvatar, preview);
+
+    // Update buttons
+    updatePhotoButtons(false);
+}
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('.needs-validation');
+
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+    // Initialize drag and drop
+    initializeDragAndDrop();
+});
+
+// Drag and drop functionality
+function initializeDragAndDrop() {
+    const uploadArea = document.querySelector('.photo-upload-area');
+    const fileInput = document.getElementById('profile_photo');
+
+    if (!uploadArea || !fileInput) return;
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    // Handle dropped files
+    uploadArea.addEventListener('drop', handleDrop, false);
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        uploadArea.classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+        uploadArea.classList.remove('dragover');
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length > 0) {
+            fileInput.files = files;
+            previewImage(fileInput);
+        }
+    }
+}
+</script>
+{% endblock %}

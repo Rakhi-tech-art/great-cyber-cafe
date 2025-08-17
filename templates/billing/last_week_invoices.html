@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Last Week Invoices - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-calendar-week me-2"></i>Last Week Invoices - UPDATED</h1>
+        <p class="text-muted">Invoices from {{ start_date.strftime('%B %d') }} to {{ end_date.strftime('%B %d, %Y') }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('billing.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create New Invoice
+        </a>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ bills|length }}</h3>
+                <p class="mb-0">Total Invoices</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>{{ bills|selectattr('status', 'equalto', 'paid')|list|length }}</h3>
+                <p class="mb-0">Paid</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3>Rs {{ "%.2f"|format(bills|sum(attribute='total_amount')) }}</h3>
+                <p class="mb-0">Total Amount</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>Rs {{ "%.2f"|format(bills|sum(attribute='remaining_amount')) }}</h3>
+                <p class="mb-0">Remaining Amount</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="draft" {{ 'selected' if request.args.get('status') == 'draft' }}>Draft</option>
+                    <option value="sent" {{ 'selected' if request.args.get('status') == 'sent' }}>Sent</option>
+                    <option value="paid" {{ 'selected' if request.args.get('status') == 'paid' }}>Paid</option>
+                    <option value="cancelled" {{ 'selected' if request.args.get('status') == 'cancelled' }}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Customer name or invoice #" value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Filter
+                    </button>
+                    <a href="{{ url_for('billing.last_week_invoices') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Invoices Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Last Week Invoices</h5>
+    </div>
+    <div class="card-body">
+        {% if bills %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Customer Phone</th>
+                        <th>Amount</th>
+                        <th>Paid Amount</th>
+                        <th>Remaining Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td>
+                            <strong>{{ bill.bill_number }}</strong>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ bill.customer.name }}</strong>
+                                {% if bill.customer.email %}
+                                <br><small class="text-muted">{{ bill.customer.email }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if bill.customer.phone %}
+                                {{ bill.customer.phone }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>Rs {{ "%.2f"|format(bill.total_amount) }}</strong>
+                        </td>
+                        <td>
+                            <strong>Rs {{ "%.2f"|format(bill.advance_amount) }}</strong>
+                        </td>
+                        <td>
+                            <strong>Rs {{ "%.2f"|format(bill.remaining_amount) }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if bill.status == 'paid' else 'warning' if bill.status == 'sent' else 'info' if bill.status == 'draft' else 'secondary' }}">
+                                {{ bill.status.title() }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ bill.created_at.strftime('%m/%d/%Y %I:%M %p') }}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('billing.view', id=bill.id) }}" class="btn btn-outline-primary" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('billing.edit', id=bill.id) }}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('billing.download_pdf', id=bill.id) }}" class="btn btn-outline-success" title="Download PDF">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-outline-info send-bill-btn" data-bill-id="{{ bill.id }}" title="Send">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                {% if bill.status != 'paid' and bill.remaining_amount > 0 %}
+                                <button class="btn btn-outline-success" onclick="updatePayment({{ bill.id }}, {{ bill.remaining_amount }})" title="Update Payment">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>
+                                {% endif %}
+                                {% if bill.status != 'paid' %}
+                                <button class="btn btn-outline-danger" onclick="deleteBill({{ bill.id }})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+            <h5>No Invoices Found</h5>
+            <p class="text-muted">No invoices were created in the last week.</p>
+            <a href="{{ url_for('billing.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Create New Invoice
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Send Bill Modal -->
+<div class="modal fade" id="sendBillModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Choose how to send this invoice:</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="sendEmail" checked>
+                    <label class="form-check-label" for="sendEmail">
+                        <i class="fas fa-envelope me-1"></i>Send via Email
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="sendWhatsApp" checked>
+                    <label class="form-check-label" for="sendWhatsApp">
+                        <i class="fab fa-whatsapp me-1"></i>Send via WhatsApp
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSendBill">Send Invoice</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Update Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Update Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="paymentAmount" class="form-label">Payment Amount (Rs)</label>
+                    <input type="number" class="form-control" id="paymentAmount" min="0" step="0.01" placeholder="Enter payment amount">
+                    <div class="form-text">Maximum amount: Rs <span id="maxAmount">0.00</span></div>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Current Status:</strong><br>
+                    Remaining Amount: Rs <span id="currentRemaining">0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmPayment">Record Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentBillId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sendBillButtons = document.querySelectorAll('.send-bill-btn');
+    const sendBillModal = new bootstrap.Modal(document.getElementById('sendBillModal'));
+    const confirmSendButton = document.getElementById('confirmSendBill');
+    
+    sendBillButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            currentBillId = this.dataset.billId;
+            sendBillModal.show();
+        });
+    });
+    
+    confirmSendButton.addEventListener('click', function() {
+        const sendEmail = document.getElementById('sendEmail').checked;
+        const sendWhatsApp = document.getElementById('sendWhatsApp').checked;
+        
+        if (!sendEmail && !sendWhatsApp) {
+            alert('Please select at least one sending method.');
+            return;
+        }
+        
+        const hideLoading = showLoading(this);
+        
+        fetch(`/billing/bills/${currentBillId}/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                send_email: sendEmail,
+                send_whatsapp: sendWhatsApp
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                alert('Invoice sent successfully!');
+                sendBillModal.hide();
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            alert('Error sending invoice: ' + error.message);
+        });
+    });
+});
+
+function deleteBill(billId) {
+    if (confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+        fetch(`/billing/bills/${billId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Invoice deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting invoice: ' + error.message);
+        });
+    }
+}
+
+// Payment update functionality
+function updatePayment(billId, remainingAmount) {
+    currentBillId = billId;
+    document.getElementById('maxAmount').textContent = remainingAmount.toFixed(2);
+    document.getElementById('currentRemaining').textContent = remainingAmount.toFixed(2);
+    document.getElementById('paymentAmount').value = '';
+    document.getElementById('paymentAmount').max = remainingAmount;
+
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+}
+
+document.getElementById('confirmPayment').addEventListener('click', function() {
+    const paymentAmount = parseFloat(document.getElementById('paymentAmount').value);
+    const maxAmount = parseFloat(document.getElementById('maxAmount').textContent);
+
+    if (!paymentAmount || paymentAmount <= 0) {
+        alert('Please enter a valid payment amount');
+        return;
+    }
+
+    if (paymentAmount > maxAmount) {
+        alert('Payment amount cannot exceed remaining amount');
+        return;
+    }
+
+    // Show loading state
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+    fetch(`/billing/bills/${currentBillId}/payment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            payment_amount: paymentAmount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        this.disabled = false;
+        this.innerHTML = 'Record Payment';
+
+        if (data.success) {
+            alert(data.message);
+            bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+            location.reload(); // Refresh to show updated amounts
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        this.disabled = false;
+        this.innerHTML = 'Record Payment';
+        alert('Error updating payment: ' + error.message);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Appearance Settings - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-palette me-2"></i>Appearance Settings</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('settings.settings') }}">Settings</a></li>
+                <li class="breadcrumb-item active">Appearance</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Settings Navigation -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Settings Menu</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('settings.profile_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user me-2"></i>Profile Settings
+                </a>
+                <a href="{{ url_for('settings.password_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-lock me-2"></i>Password & Security
+                </a>
+                <a href="{{ url_for('settings.appearance_settings') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-palette me-2"></i>Appearance
+                </a>
+                <a href="{{ url_for('settings.notification_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </a>
+                <a href="{{ url_for('settings.account_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-cog me-2"></i>Account Settings
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Appearance Settings -->
+    <div class="col-md-9">
+        <!-- Theme Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Theme Selection</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Choose your preferred theme for the application interface.</p>
+                
+                <div class="row">
+                    <!-- Light Theme -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card theme-card {{ 'border-primary' if current_user.theme == 'light' else '' }}" 
+                             data-theme="light" style="cursor: pointer;">
+                            <div class="card-body text-center">
+                                <div class="theme-preview bg-light border rounded p-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="bg-primary rounded" style="width: 20px; height: 3px;"></div>
+                                        <div class="d-flex gap-1">
+                                            <div class="bg-secondary rounded-circle" style="width: 6px; height: 6px;"></div>
+                                            <div class="bg-secondary rounded-circle" style="width: 6px; height: 6px;"></div>
+                                            <div class="bg-secondary rounded-circle" style="width: 6px; height: 6px;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white border rounded p-2">
+                                        <div class="bg-light rounded mb-1" style="height: 4px;"></div>
+                                        <div class="bg-light rounded mb-1" style="height: 4px; width: 80%;"></div>
+                                        <div class="bg-light rounded" style="height: 4px; width: 60%;"></div>
+                                    </div>
+                                </div>
+                                <h6>Light Theme</h6>
+                                <p class="text-muted small mb-0">Clean and bright interface</p>
+                                {% if current_user.theme == 'light' %}
+                                <div class="mt-2">
+                                    <span class="badge bg-primary">Current Theme</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dark Theme -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card theme-card {{ 'border-primary' if current_user.theme == 'dark' else '' }}" 
+                             data-theme="dark" style="cursor: pointer;">
+                            <div class="card-body text-center">
+                                <div class="theme-preview bg-dark border rounded p-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="bg-primary rounded" style="width: 20px; height: 3px;"></div>
+                                        <div class="d-flex gap-1">
+                                            <div class="bg-light rounded-circle" style="width: 6px; height: 6px;"></div>
+                                            <div class="bg-light rounded-circle" style="width: 6px; height: 6px;"></div>
+                                            <div class="bg-light rounded-circle" style="width: 6px; height: 6px;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-secondary border rounded p-2">
+                                        <div class="bg-dark rounded mb-1" style="height: 4px;"></div>
+                                        <div class="bg-dark rounded mb-1" style="height: 4px; width: 80%;"></div>
+                                        <div class="bg-dark rounded" style="height: 4px; width: 60%;"></div>
+                                    </div>
+                                </div>
+                                <h6>Dark Theme</h6>
+                                <p class="text-muted small mb-0">Easy on the eyes</p>
+                                {% if current_user.theme == 'dark' %}
+                                <div class="mt-2">
+                                    <span class="badge bg-primary">Current Theme</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Theme Toggle -->
+                <div class="d-flex justify-content-center mt-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="themeToggle" 
+                               {{ 'checked' if current_user.theme == 'dark' else '' }}>
+                        <label class="form-check-label" for="themeToggle">
+                            <i class="fas fa-moon me-1"></i>Dark Mode
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const themeCards = document.querySelectorAll('.theme-card');
+    const themeToggle = document.getElementById('themeToggle');
+
+    
+    // Theme card click handlers
+    themeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const theme = this.dataset.theme;
+            selectTheme(theme);
+        });
+    });
+    
+    // Theme toggle handler
+    themeToggle.addEventListener('change', function() {
+        const theme = this.checked ? 'dark' : 'light';
+        selectTheme(theme);
+    });
+    
+    function selectTheme(theme) {
+        // Update UI
+        themeCards.forEach(card => {
+            card.classList.remove('border-primary');
+            if (card.dataset.theme === theme) {
+                card.classList.add('border-primary');
+            }
+        });
+        
+        // Update toggle
+        themeToggle.checked = theme === 'dark';
+        
+        // Apply theme immediately via AJAX
+        fetch('/api/settings/theme', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                theme: theme
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Apply theme to current page
+                applyTheme(theme);
+                
+                // Show success message
+                showToast('Theme updated successfully!', 'success');
+            } else {
+                showToast('Error updating theme: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('Error updating theme: ' + error.message, 'error');
+        });
+    }
+    
+    function applyTheme(theme) {
+        const body = document.body;
+        
+        if (theme === 'dark') {
+            body.classList.add('dark-theme');
+            body.classList.remove('light-theme');
+        } else {
+            body.classList.add('light-theme');
+            body.classList.remove('dark-theme');
+        }
+    }
+    
+    function showToast(message, type) {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3000);
+    }
+    
+    // Initialize current theme
+    applyTheme('{{ current_user.theme }}');
+});
+
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset theme to default?')) {
+        selectTheme('light');
+    }
+}
+</script>
+{% endblock %}

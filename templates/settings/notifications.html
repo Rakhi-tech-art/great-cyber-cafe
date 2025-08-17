@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-bell me-2"></i>Notification Settings</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('settings.settings') }}">Settings</a></li>
+                <li class="breadcrumb-item active">Notifications</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Settings Navigation -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Settings Menu</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('settings.profile_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user me-2"></i>Profile Settings
+                </a>
+                <a href="{{ url_for('settings.password_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-lock me-2"></i>Password & Security
+                </a>
+                <a href="{{ url_for('settings.appearance_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-palette me-2"></i>Appearance
+                </a>
+                <a href="{{ url_for('settings.notification_settings') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </a>
+                <a href="{{ url_for('settings.account_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-cog me-2"></i>Account Settings
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Settings -->
+    <div class="col-md-9">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" id="notificationForm">
+            <!-- Email Notifications -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Email Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailBillCreated" name="email_bill_created" {{ 'checked' if prefs and prefs.email_bill_created else '' }}>
+                                <label class="form-check-label" for="emailBillCreated">
+                                    <strong>Bill Created</strong>
+                                    <br><small class="text-muted">Get notified when a new bill is created</small>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailBillPaid" name="email_bill_paid" {{ 'checked' if prefs and prefs.email_bill_paid else '' }}>
+                                <label class="form-check-label" for="emailBillPaid">
+                                    <strong>Bill Paid</strong>
+                                    <br><small class="text-muted">Get notified when a bill is marked as paid</small>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailExpenseAdded" name="email_expense_added" {{ 'checked' if prefs and prefs.email_expense_added else '' }}>
+                                <label class="form-check-label" for="emailExpenseAdded">
+                                    <strong>Expense Added</strong>
+                                    <br><small class="text-muted">Get notified when new expenses are recorded</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailWeeklyReport" name="email_weekly_report" {{ 'checked' if prefs and prefs.email_weekly_report else '' }}>
+                                <label class="form-check-label" for="emailWeeklyReport">
+                                    <strong>Weekly Reports</strong>
+                                    <br><small class="text-muted">Receive weekly business summary reports</small>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailMonthlyReport" name="email_monthly_report" {{ 'checked' if prefs and prefs.email_monthly_report else '' }}>
+                                <label class="form-check-label" for="emailMonthlyReport">
+                                    <strong>Monthly Reports</strong>
+                                    <br><small class="text-muted">Receive monthly business analytics</small>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailSystemUpdates" name="email_system_updates" {{ 'checked' if prefs and prefs.email_system_updates else '' }}>
+                                <label class="form-check-label" for="emailSystemUpdates">
+                                    <strong>System Updates</strong>
+                                    <br><small class="text-muted">Get notified about system updates and maintenance</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- WhatsApp Notifications -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">WhatsApp Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        WhatsApp notifications are sent to your registered phone number: <strong>{{ current_user.phone or 'Not provided' }}</strong>
+                        {% if not current_user.phone %}
+                        <br><small>Please update your phone number in <a href="{{ url_for('settings.profile_settings') }}" class="alert-link">Profile Settings</a> to enable WhatsApp notifications.</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="whatsappBillPaid" name="whatsapp_bill_paid" {{ 'checked' if prefs and prefs.whatsapp_bill_paid else '' }}>
+                                <label class="form-check-label" for="whatsappBillPaid">
+                                    <strong>Bill Payment Alerts</strong>
+                                    <br><small class="text-muted">Get WhatsApp alerts for bill payments</small>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="whatsappDailySum" name="whatsapp_daily_summary" {{ 'checked' if prefs and prefs.whatsapp_daily_summary else '' }}>
+                                <label class="form-check-label" for="whatsappDailySum">
+                                    <strong>Daily Summary</strong>
+                                    <br><small class="text-muted">Receive daily business summary via WhatsApp</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="whatsappOverdue" name="whatsapp_overdue" {{ 'checked' if prefs and prefs.whatsapp_overdue else '' }}>
+                                <label class="form-check-label" for="whatsappOverdue">
+                                    <strong>Overdue Bills</strong>
+                                    <br><small class="text-muted">Get alerts for overdue bills</small>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="whatsappGoals" name="whatsapp_goals" {{ 'checked' if prefs and prefs.whatsapp_goals else '' }}>
+                                <label class="form-check-label" for="whatsappGoals">
+                                    <strong>Goal Achievements</strong>
+                                    <br><small class="text-muted">Get notified when you reach revenue goals</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Preview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Notification Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-envelope me-2"></i>Email Notification Sample</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="mb-2"><strong>Subject:</strong> New Invoice Created - #INV-001</div>
+                                <div class="small text-muted">
+                                    Dear {{ current_user.username }},<br><br>
+                                    A new invoice has been created in your Smart Billing System.<br>
+                                    Invoice Number: #INV-001<br>
+                                    Customer: John Doe<br>
+                                    Amount: Rs 1,500.00<br><br>
+                                    Best regards,<br>
+                                    Smart Billing System
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fab fa-whatsapp me-2"></i>WhatsApp Notification Sample</h6>
+                            <div class="border rounded p-3 bg-success text-white">
+                                <div class="small">
+                                    🧾 *Smart Billing Alert*<br><br>
+                                    Payment received for Invoice #INV-001<br>
+                                    Customer: John Doe<br>
+                                    Amount: Rs 1,500.00<br>
+                                    Status: Paid ✅<br><br>
+                                    Great Cyber Cafe
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Schedule -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Notification Schedule</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Quiet Hours Start</label>
+                                <input type="time" class="form-control" name="quiet_hours_start" value="{{ prefs.quiet_hours_start.strftime('%H:%M') if prefs and prefs.quiet_hours_start else '22:00' }}">
+                                <div class="form-text">No notifications will be sent during quiet hours</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Quiet Hours End</label>
+                                <input type="time" class="form-control" name="quiet_hours_end" value="{{ prefs.quiet_hours_end.strftime('%H:%M') if prefs and prefs.quiet_hours_end else '08:00' }}">
+                                <div class="form-text">Notifications will resume after this time</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Weekly Report Day</label>
+                                <select class="form-select" name="weekly_report_day">
+                                    {% set selected_day = prefs.weekly_report_day if prefs else 'monday' %}
+                                    <option value="monday" {{ 'selected' if selected_day == 'monday' else '' }}>Monday</option>
+                                    <option value="tuesday" {{ 'selected' if selected_day == 'tuesday' else '' }}>Tuesday</option>
+                                    <option value="wednesday" {{ 'selected' if selected_day == 'wednesday' else '' }}>Wednesday</option>
+                                    <option value="thursday" {{ 'selected' if selected_day == 'thursday' else '' }}>Thursday</option>
+                                    <option value="friday" {{ 'selected' if selected_day == 'friday' else '' }}>Friday</option>
+                                    <option value="saturday" {{ 'selected' if selected_day == 'saturday' else '' }}>Saturday</option>
+                                    <option value="sunday" {{ 'selected' if selected_day == 'sunday' else '' }}>Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Report Time</label>
+                                <input type="time" class="form-control" name="report_time" value="{{ prefs.report_time.strftime('%H:%M') if prefs and prefs.report_time else '09:00' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <div class="row">
+                <div class="col">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-save me-1"></i>Save Notification Settings
+                    </button>
+                    <a href="{{ url_for('settings.settings') }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </a>
+                    <button type="button" class="btn btn-outline-info" onclick="sendTestNotification()">
+                        <i class="fas fa-paper-plane me-1"></i>Send Test Email
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation for form submission
+    const form = document.getElementById('notificationForm');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function(e) {
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+        submitBtn.disabled = true;
+    });
+
+    // Add change indicators
+    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    const timeInputs = form.querySelectorAll('input[type="time"]');
+    const selectInputs = form.querySelectorAll('select');
+
+    let hasChanges = false;
+
+    function markAsChanged() {
+        hasChanges = true;
+        submitBtn.classList.remove('btn-primary');
+        submitBtn.classList.add('btn-warning');
+        submitBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Changes';
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', markAsChanged);
+    });
+
+    timeInputs.forEach(input => {
+        input.addEventListener('change', markAsChanged);
+    });
+
+    selectInputs.forEach(select => {
+        select.addEventListener('change', markAsChanged);
+    });
+
+    // Warn before leaving if there are unsaved changes
+    window.addEventListener('beforeunload', function(e) {
+        if (hasChanges) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // Phone number validation for WhatsApp notifications
+    const phoneDisplay = document.querySelector('.alert-info strong');
+    if (phoneDisplay && phoneDisplay.textContent === 'Not provided') {
+        const whatsappCheckboxes = document.querySelectorAll('input[name^="whatsapp_"]');
+        whatsappCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    alert('Please update your phone number in Profile Settings to receive WhatsApp notifications.');
+                    this.checked = false;
+                }
+            });
+        });
+    }
+});
+
+function sendTestNotification() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+
+    // Show loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+    btn.disabled = true;
+
+    fetch('/api/settings/test-notification', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.col-md-9').insertBefore(alertDiv, document.querySelector('form'));
+        } else {
+            // Show error message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.col-md-9').insertBefore(alertDiv, document.querySelector('form'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Failed to send test notification. Please try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.col-md-9').insertBefore(alertDiv, document.querySelector('form'));
+    })
+    .finally(() => {
+        // Restore button state
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

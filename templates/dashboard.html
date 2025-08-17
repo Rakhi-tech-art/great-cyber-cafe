@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+        {% if stats.is_admin %}
+        <p class="text-muted">Welcome back, {{ current_user.username }}! Here's your complete business overview.</p>
+        {% else %}
+        <p class="text-muted">Welcome back, {{ current_user.username }}! Here's your personal work overview.</p>
+        {% endif %}
+    </div>
+    <div class="col-auto">
+        <div class="btn-group">
+            <a href="{{ url_for('billing.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>New Bill
+            </a>
+            <a href="{{ url_for('work.create') }}" class="btn btn-success">
+                <i class="fas fa-briefcase me-1"></i>New Work Entry
+            </a>
+            {% if stats.is_admin %}
+            <a href="{{ url_for('expense.create') }}" class="btn btn-warning">
+                <i class="fas fa-receipt me-1"></i>Add Expense
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Today's Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-calendar-day me-2"></i>Today's Summary</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>{{ stats.today_work }}</strong> active work tasks
+                </div>
+                <div class="col-md-3">
+                    <strong>Rs {{ "%.2f"|format(stats.total_pending_payments) }}</strong> pending payments
+                </div>
+                <div class="col-md-3">
+                    <strong>{{ stats.pending_work + stats.in_progress_work }}</strong> incomplete work items
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('work.entries', status='pending') }}" class="btn btn-sm btn-outline-primary">View Tasks</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue & Financial Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card revenue">
+            <div class="card-body text-center">
+                <i class="fas fa-rupee-sign fa-2x mb-2"></i>
+                <h3>Rs {{ "%.2f"|format(stats.total_combined_revenue) }}</h3>
+                {% if stats.is_admin %}
+                <p class="mb-0">Total Revenue</p>
+                {% else %}
+                <p class="mb-0">My Revenue</p>
+                {% endif %}
+                <small>Rs {{ "%.2f"|format(stats.monthly_combined_revenue) }} this month</small>
+            </div>
+        </div>
+    </div>
+
+    {% if stats.is_admin %}
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card expense">
+            <div class="card-body text-center">
+                <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                <h3>Rs {{ "%.2f"|format(stats.total_expenses) }}</h3>
+                <p class="mb-0">Total Expenses</p>
+                <small>Rs {{ "%.2f"|format(stats.monthly_expenses) }} this month</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card profit">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <h3>Rs {{ "%.2f"|format(stats.total_profit) }}</h3>
+                <p class="mb-0">Net Profit</p>
+                <small>Rs {{ "%.2f"|format(stats.monthly_profit) }} this month</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card remaining">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h3>{{ stats.total_users }}</h3>
+                <p class="mb-0">Total Users</p>
+                <small>System-wide user count</small>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card bills">
+            <div class="card-body text-center">
+                <i class="fas fa-file-invoice fa-2x mb-2"></i>
+                <h3>{{ stats.total_bills }}</h3>
+                <p class="mb-0">My Invoices</p>
+                <small>{{ stats.monthly_bills }} this month</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card work">
+            <div class="card-body text-center">
+                <i class="fas fa-briefcase fa-2x mb-2"></i>
+                <h3>{{ stats.total_work_entries }}</h3>
+                <p class="mb-0">Work Entries</p>
+                <small>{{ stats.monthly_work_entries }} this month</small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card remaining">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h3>Rs {{ "%.2f"|format(stats.total_pending_payments) }}</h3>
+                {% if stats.is_admin %}
+                <p class="mb-0">Pending Payments</p>
+                {% else %}
+                <p class="mb-0">My Pending</p>
+                {% endif %}
+                <small>{{ stats.pending_work + stats.in_progress_work }} pending work</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Work Status Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Work Status Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="mb-2">
+                            <i class="fas fa-hourglass-start fa-2x text-warning"></i>
+                        </div>
+                        <h4>{{ stats.pending_work }}</h4>
+                        <p class="mb-0">Pending</p>
+                        <a href="{{ url_for('work.entries', status='pending') }}" class="btn btn-sm btn-outline-warning mt-1">View</a>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="mb-2">
+                            <i class="fas fa-spinner fa-2x text-primary"></i>
+                        </div>
+                        <h4>{{ stats.in_progress_work }}</h4>
+                        <p class="mb-0">In Progress</p>
+                        <a href="{{ url_for('work.entries', status='in_progress') }}" class="btn btn-sm btn-outline-primary mt-1">View</a>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="mb-2">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                        <h4>{{ stats.completed_work }}</h4>
+                        <p class="mb-0">Completed</p>
+                        <a href="{{ url_for('work.entries', status='completed') }}" class="btn btn-sm btn-outline-success mt-1">View</a>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="mb-2">
+                            <i class="fas fa-truck fa-2x text-info"></i>
+                        </div>
+                        <h4>{{ stats.delivered_work }}</h4>
+                        <p class="mb-0">Delivered</p>
+                        <a href="{{ url_for('work.entries', status='delivered') }}" class="btn btn-sm btn-outline-info mt-1">View</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Business Metrics -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-file-invoice me-2"></i>Bills Overview</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <h4>{{ stats.total_bills }}</h4>
+                        <small class="text-muted">Total Bills</small>
+                    </div>
+                    <div class="col-6">
+                        <h4>{{ stats.monthly_bills }}</h4>
+                        <small class="text-muted">This Month</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="{{ url_for('billing.bills') }}" class="btn btn-outline-primary btn-sm">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-briefcase me-2"></i>Work Entries</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <h4>{{ stats.total_work_entries }}</h4>
+                        <small class="text-muted">Total Work</small>
+                    </div>
+                    <div class="col-6">
+                        <h4>{{ stats.monthly_work_entries }}</h4>
+                        <small class="text-muted">This Month</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="{{ url_for('work.entries') }}" class="btn btn-outline-success btn-sm">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i>Revenue Split</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <h6>Rs {{ "%.0f"|format(stats.total_revenue) }}</h6>
+                        <small class="text-muted">Bills</small>
+                    </div>
+                    <div class="col-6">
+                        <h6>Rs {{ "%.0f"|format(stats.work_revenue) }}</h6>
+                        <small class="text-muted">Work</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="{{ url_for('dashboard.analytics') }}" class="btn btn-outline-info btn-sm">Analytics</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Recent Bills</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_bills %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Bill #</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in stats.recent_bills %}
+                            <tr>
+                                <td>{{ bill.bill_number }}</td>
+                                <td>{{ bill.customer.name }}</td>
+                                <td>Rs {{ "%.0f"|format(bill.total_amount) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if bill.status == 'paid' else 'warning' if bill.status == 'sent' else 'secondary' }}">
+                                        {{ bill.status.title() }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No bills created yet.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('billing.bills') }}" class="btn btn-outline-primary btn-sm">View All Bills</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Recent Work</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_work %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Service</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for work in stats.recent_work %}
+                            <tr>
+                                <td>{{ work.customer_name }}</td>
+                                <td>{{ work.service_type }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if work.work_status == 'delivered' else 'primary' if work.work_status == 'completed' else 'warning' if work.work_status == 'in_progress' else 'secondary' }}">
+                                        {{ work.work_status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>Rs {{ "%.0f"|format(work.total_amount) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No work entries yet.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('work.entries') }}" class="btn btn-outline-success btn-sm">View All Work</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>Recent Expenses</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_expenses %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in stats.recent_expenses %}
+                            <tr>
+                                <td>{{ expense.title }}</td>
+                                <td>{{ expense.category }}</td>
+                                <td>Rs {{ "%.0f"|format(expense.amount) }}</td>
+                                <td>{{ expense.date.strftime('%m/%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No expenses recorded yet.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('expense.expenses') }}" class="btn btn-outline-warning btn-sm">View All Expenses</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card {
+    transition: transform 0.2s ease-in-out;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.stat-card.revenue {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.stat-card.expense {
+    background: linear-gradient(135deg, #dc3545, #fd7e14);
+    color: white;
+}
+
+.stat-card.profit {
+    background: linear-gradient(135deg, #007bff, #6610f2);
+    color: white;
+}
+
+.stat-card.remaining {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border: none;
+    border-left: 4px solid #2196f3;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.btn-group .btn {
+    margin-right: 0.5rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group .btn {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-group .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Work Entry - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-edit me-2"></i>Edit Work Entry</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('work.entries') }}">Work Tracker</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('work.view', id=work_entry.id) }}">{{ work_entry.project_name }}</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Work Entry Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="needs-validation" novalidate>
+                    <!-- Customer Information -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="customer_name" class="form-label">Customer Name *</label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ work_entry.customer_name or '' }}" required>
+                            <div class="invalid-feedback">Please provide a customer name.</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="customer_phone" class="form-label">Customer Phone *</label>
+                            <input type="tel" class="form-control" id="customer_phone" name="customer_phone" value="{{ work_entry.customer_phone or '' }}" required>
+                            <div class="invalid-feedback">Please provide a customer phone number.</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="service_type" class="form-label">Service Type *</label>
+                            <select class="form-select" id="service_type" name="service_type" required>
+                                <option value="pan_card" {{ 'selected' if work_entry.service_type == 'pan_card' else '' }}>PAN Card</option>
+                                <option value="aadhar_card" {{ 'selected' if work_entry.service_type == 'aadhar_card' else '' }}>Aadhar Card</option>
+                                <option value="passport" {{ 'selected' if work_entry.service_type == 'passport' else '' }}>Passport</option>
+                                <option value="other" {{ 'selected' if work_entry.service_type == 'other' else '' }}>Other</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a service type.</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="project_name" class="form-label">Work Name *</label>
+                            <input type="text" class="form-control" id="project_name" name="project_name" value="{{ work_entry.project_name }}" required>
+                            <div class="invalid-feedback">Please provide a work name.</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="hourly_rate" class="form-label">Amount (Rs) *</label>
+                            <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" value="{{ work_entry.hourly_rate }}" min="0.01" step="0.01" required>
+                            <div class="invalid-feedback">Please provide an amount.</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="advance_amount" class="form-label">Advance Amount (Rs)</label>
+                            <input type="number" class="form-control" id="advance_amount" name="advance_amount" value="{{ work_entry.advance_amount or 0 }}" min="0" step="0.01">
+                            <div class="form-text">Amount already paid by customer</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="task_description" class="form-label">Task Description *</label>
+                        <textarea class="form-control" id="task_description" name="task_description" rows="3" required>{{ work_entry.task_description }}</textarea>
+                        <div class="invalid-feedback">Please provide a task description.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="work_status" class="form-label">Work Status *</label>
+                            <select class="form-select" id="work_status" name="work_status" required>
+                                <option value="pending" {{ 'selected' if work_entry.work_status == 'pending' else '' }}>Pending</option>
+                                <option value="in_progress" {{ 'selected' if work_entry.work_status == 'in_progress' else '' }}>In Progress</option>
+                                <option value="completed" {{ 'selected' if work_entry.work_status == 'completed' else '' }}>Completed</option>
+                                <option value="delivered" {{ 'selected' if work_entry.work_status == 'delivered' else '' }}>Delivered</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a work status.</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="payment_status" class="form-label">Payment Status *</label>
+                            <select class="form-select" id="payment_status" name="payment_status" required>
+                                <option value="pending" {{ 'selected' if work_entry.payment_status == 'pending' else '' }}>Pending</option>
+                                <option value="partial" {{ 'selected' if work_entry.payment_status == 'partial' else '' }}>Partial</option>
+                                <option value="paid" {{ 'selected' if work_entry.payment_status == 'paid' else '' }}>Paid</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a payment status.</div>
+                        </div>
+                    </div>
+                    
+
+                    
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6><i class="fas fa-calculator me-2"></i>Current Calculation</h6>
+                            <div id="calculation">
+                                <strong>Work Status:</strong> {{ work_entry.work_status.replace('_', ' ').title() }}<br>
+                                <strong>Rate:</strong> Rs {{ "%.2f"|format(work_entry.hourly_rate) }} per hour
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-save me-1"></i>Update Work Entry
+                            </button>
+                            <a href="{{ url_for('work.view', id=work_entry.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+    
+
+});
+</script>
+{% endblock %}

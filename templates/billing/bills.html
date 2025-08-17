@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}All Invoices - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-file-invoice-dollar me-2"></i>All Invoices</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Invoices</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('billing.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create Invoice
+        </a>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search or '' }}" placeholder="Search by customer name or invoice number">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Status</option>
+                    <option value="draft" {% if status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="sent" {% if status == 'sent' %}selected{% endif %}>Sent</option>
+                    <option value="paid" {% if status == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Filter
+                </button>
+                <a href="{{ url_for('billing.bills') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Invoices Table -->
+<div class="card">
+    <div class="card-body">
+        {% if bills.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Customer Phone</th>
+                        <th>Amount</th>
+                        <th>Paid Amount</th>
+                        <th>Remaining Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills.items %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('billing.view', id=bill.id) }}" class="text-decoration-none">
+                                {{ bill.bill_number }}
+                            </a>
+                        </td>
+                        <td>{{ bill.customer.name }}</td>
+                        <td>
+                            {% if bill.customer.phone %}
+                                {{ bill.customer.phone }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>Rs {{ "%.2f"|format(bill.total_amount) }}</td>
+                        <td>Rs {{ "%.2f"|format(bill.advance_amount) }}</td>
+                        <td>Rs {{ "%.2f"|format(bill.remaining_amount) }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if bill.status == 'paid' else 'warning' if bill.status == 'sent' else 'info' if bill.status == 'draft' else 'secondary' }}">
+                                {{ bill.status.title() }}
+                            </span>
+                        </td>
+                        <td>{{ bill.created_at.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('billing.view', id=bill.id) }}" class="btn btn-outline-primary" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('billing.edit', id=bill.id) }}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('billing.download_pdf', id=bill.id) }}" class="btn btn-outline-success" title="Download PDF">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-outline-info" onclick="sendBill({{ bill.id }})" title="Send">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                {% if bill.status != 'paid' and bill.remaining_amount > 0 %}
+                                <button class="btn btn-outline-success" onclick="updatePayment({{ bill.id }}, {{ bill.remaining_amount }})" title="Update Payment">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>
+                                {% endif %}
+                                {% if bill.status != 'paid' %}
+                                <button class="btn btn-outline-danger" onclick="deleteBill({{ bill.id }})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown" title="More Actions">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="duplicateBill({{ bill.id }})">
+                                            <i class="fas fa-copy me-2"></i>Duplicate
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if bills.pages > 1 %}
+        <nav aria-label="Invoice pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if bills.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('billing.bills', page=bills.prev_num, status=status, search=search) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in bills.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != bills.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('billing.bills', page=page_num, status=status, search=search) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">…</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if bills.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('billing.bills', page=bills.next_num, status=status, search=search) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No invoices found</h5>
+            <p class="text-muted">
+                {% if search or status %}
+                    No invoices match your current filters. <a href="{{ url_for('billing.bills') }}">Clear filters</a> to see all invoices.
+                {% else %}
+                    You haven't created any invoices yet.
+                {% endif %}
+            </p>
+            <a href="{{ url_for('billing.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Create Your First Invoice
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Cards -->
+{% if bills.items %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">Total Invoices</h5>
+                <h3 class="text-primary">{{ bills.total }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">Total Amount</h5>
+                <h3 class="text-success">Rs {{ "%.2f"|format(bills.items|sum(attribute='total_amount')) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">Pending</h5>
+                <h3 class="text-warning">{{ bills.items|selectattr('status', 'ne', 'paid')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">Paid</h5>
+                <h3 class="text-info">{{ bills.items|selectattr('status', 'eq', 'paid')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Payment Update Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Update Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="paymentAmount" class="form-label">Payment Amount (Rs)</label>
+                    <input type="number" class="form-control" id="paymentAmount" min="0" step="0.01" placeholder="Enter payment amount">
+                    <div class="form-text">Maximum amount: Rs <span id="maxAmount">0.00</span></div>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Current Status:</strong><br>
+                    Remaining Amount: Rs <span id="currentRemaining">0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmPayment">Record Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendBill(billId) {
+    if (confirm('Send this invoice to the customer?')) {
+        fetch(`/billing/bills/${billId}/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Invoice sent successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error sending invoice: ' + error.message);
+        });
+    }
+}
+
+function duplicateBill(billId) {
+    if (confirm('Create a duplicate of this invoice?')) {
+        fetch(`/billing/bills/${billId}/duplicate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/billing/bills/${data.new_bill_id}/edit`;
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error duplicating invoice: ' + error.message);
+        });
+    }
+}
+
+function deleteBill(billId) {
+    if (confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+        fetch(`/billing/bills/${billId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Invoice deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting invoice: ' + error.message);
+        });
+    }
+}
+
+// Payment update functionality
+let currentBillId = null;
+
+function updatePayment(billId, remainingAmount) {
+    currentBillId = billId;
+    document.getElementById('maxAmount').textContent = remainingAmount.toFixed(2);
+    document.getElementById('currentRemaining').textContent = remainingAmount.toFixed(2);
+    document.getElementById('paymentAmount').value = '';
+    document.getElementById('paymentAmount').max = remainingAmount;
+
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+}
+
+document.getElementById('confirmPayment').addEventListener('click', function() {
+    const paymentAmount = parseFloat(document.getElementById('paymentAmount').value);
+    const maxAmount = parseFloat(document.getElementById('maxAmount').textContent);
+
+    if (!paymentAmount || paymentAmount <= 0) {
+        alert('Please enter a valid payment amount');
+        return;
+    }
+
+    if (paymentAmount > maxAmount) {
+        alert('Payment amount cannot exceed remaining amount');
+        return;
+    }
+
+    // Show loading state
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+    fetch(`/billing/bills/${currentBillId}/payment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            payment_amount: paymentAmount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        this.disabled = false;
+        this.innerHTML = 'Record Payment';
+
+        if (data.success) {
+            alert(data.message);
+            bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+            location.reload(); // Refresh to show updated amounts
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        this.disabled = false;
+        this.innerHTML = 'Record Payment';
+        alert('Error updating payment: ' + error.message);
+    });
+});
+</script>
+{% endblock %}

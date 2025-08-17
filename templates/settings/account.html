@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings - Smart Billing System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-user-cog me-2"></i>Account Settings</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('settings.settings') }}">Settings</a></li>
+                <li class="breadcrumb-item active">Account</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Settings Navigation -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Settings Menu</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('settings.profile_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user me-2"></i>Profile Settings
+                </a>
+                <a href="{{ url_for('settings.password_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-lock me-2"></i>Password & Security
+                </a>
+                <a href="{{ url_for('settings.appearance_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-palette me-2"></i>Appearance
+                </a>
+                <a href="{{ url_for('settings.notification_settings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </a>
+                <a href="{{ url_for('settings.account_settings') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-user-cog me-2"></i>Account Settings
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Account Settings -->
+    <div class="col-md-9">
+        <!-- Account Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Account Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Username:</strong> {{ current_user.username }}</p>
+                        <p><strong>Email:</strong> {{ current_user.email }}</p>
+                        <p><strong>Phone:</strong> {{ current_user.phone or 'Not provided' }}</p>
+                        <p><strong>Role:</strong> 
+                            <span class="badge bg-{{ 'danger' if current_user.role == 'admin' else 'primary' }}">
+                                {{ current_user.role.title() }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Member Since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                        <p><strong>Account Status:</strong> 
+                            <span class="badge bg-{{ 'success' if current_user.is_active else 'secondary' }}">
+                                {{ 'Active' if current_user.is_active else 'Inactive' }}
+                            </span>
+                        </p>
+                        <p><strong>Theme Preference:</strong> {{ current_user.theme.title() }}</p>
+                        <p><strong>Last Login:</strong> <span class="text-muted">Current session</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Account Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h4>{{ current_user.bills|length }}</h4>
+                                <p class="mb-0">Bills Created</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h4>{{ current_user.expenses|length }}</h4>
+                                <p class="mb-0">Expenses Recorded</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h4>{{ current_user.work_entries|length }}</h4>
+                                <p class="mb-0">Work Entries</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <h4>{{ (current_user.created_at - current_user.created_at).days + 1 }}</h4>
+                                <p class="mb-0">Days Active</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Export -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-download me-2"></i>Data Export</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Export your data for backup or migration purposes. All exports are in CSV format.</p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid gap-3">
+                            <div class="export-item">
+                                <button class="btn btn-outline-primary w-100" onclick="exportData('bills')">
+                                    <i class="fas fa-file-invoice me-2"></i>Export Bills Data
+                                </button>
+                                <small class="text-muted d-block mt-1">Includes customer info, amounts, and payment status</small>
+                            </div>
+                            <div class="export-item">
+                                <button class="btn btn-outline-success w-100" onclick="exportData('expenses')">
+                                    <i class="fas fa-receipt me-2"></i>Export Expenses Data
+                                </button>
+                                <small class="text-muted d-block mt-1">All expense records with categories and amounts</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid gap-3">
+                            <div class="export-item">
+                                <button class="btn btn-outline-info w-100" onclick="exportData('work')">
+                                    <i class="fas fa-clock me-2"></i>Export Work Data
+                                </button>
+                                <small class="text-muted d-block mt-1">Work entries with time tracking and payments</small>
+                            </div>
+                            <div class="export-item">
+                                <button class="btn btn-warning w-100" onclick="exportData('all')">
+                                    <i class="fas fa-database me-2"></i>Export All Data
+                                </button>
+                                <small class="text-muted d-block mt-1">Complete backup with summary statistics</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Export Information:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>All exports include only your data</li>
+                        <li>Files are generated in CSV format for easy import</li>
+                        <li>Currency amounts are formatted with "Rs" prefix</li>
+                        <li>Timestamps are in YYYY-MM-DD HH:MM:SS format</li>
+                    </ul>
+                </div>
+
+                <!-- Export Statistics -->
+                <div class="card mt-3" id="exportStats" style="display: none;">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Your Data Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h4 class="text-primary mb-1" id="billsCount">-</h4>
+                                    <small class="text-muted">Bills</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h4 class="text-success mb-1" id="expensesCount">-</h4>
+                                    <small class="text-muted">Expenses</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h4 class="text-info mb-1" id="workCount">-</h4>
+                                    <small class="text-muted">Work Entries</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h4 class="text-warning mb-1" id="totalRecords">-</h4>
+                                    <small class="text-muted">Total Records</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Privacy Settings -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Privacy Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="shareAnalytics" checked>
+                    <label class="form-check-label" for="shareAnalytics">
+                        <strong>Share Anonymous Analytics</strong>
+                        <br><small class="text-muted">Help improve the system by sharing anonymous usage data</small>
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="marketingEmails">
+                    <label class="form-check-label" for="marketingEmails">
+                        <strong>Marketing Emails</strong>
+                        <br><small class="text-muted">Receive emails about new features and updates</small>
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="dataRetention" checked>
+                    <label class="form-check-label" for="dataRetention">
+                        <strong>Data Retention</strong>
+                        <br><small class="text-muted">Keep my data for business analytics and reporting</small>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="card border-danger mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>Warning:</strong> These actions are irreversible. Please proceed with caution.
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Deactivate Account</h6>
+                        <p class="text-muted">Temporarily disable your account. You can reactivate it later.</p>
+                        <button class="btn btn-warning" onclick="confirmDeactivation()">
+                            <i class="fas fa-pause me-1"></i>Deactivate Account
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Delete Account</h6>
+                        <p class="text-muted">Permanently delete your account and all associated data.</p>
+                        <button class="btn btn-danger" onclick="confirmDeletion()">
+                            <i class="fas fa-trash me-1"></i>Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modals -->
+<div class="modal fade" id="deactivationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Account Deactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to deactivate your account?</p>
+                <p class="text-muted">Your account will be temporarily disabled, but your data will be preserved. You can reactivate your account by contacting an administrator.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="deactivate">
+                    <button type="submit" class="btn btn-warning">Deactivate Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deletionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Account Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>This action cannot be undone!</strong>
+                </div>
+                <p>Are you absolutely sure you want to delete your account?</p>
+                <p>This will permanently delete:</p>
+                <ul>
+                    <li>Your profile and account information</li>
+                    <li>All bills and invoices</li>
+                    <li>All expense records</li>
+                    <li>All work entries</li>
+                    <li>All associated data</li>
+                </ul>
+                <div class="mb-3">
+                    <label class="form-label">Type "DELETE" to confirm:</label>
+                    <input type="text" class="form-control" id="deleteConfirmation" placeholder="Type DELETE">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled onclick="deleteAccount()">
+                    Delete My Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDeactivation() {
+    const modal = new bootstrap.Modal(document.getElementById('deactivationModal'));
+    modal.show();
+}
+
+function confirmDeletion() {
+    const modal = new bootstrap.Modal(document.getElementById('deletionModal'));
+    modal.show();
+}
+
+function exportData(type) {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exporting...';
+
+    // Create a temporary link to download the file
+    const link = document.createElement('a');
+    link.href = `/export/${type}`;
+    link.download = `${type}_export_${new Date().toISOString().slice(0,10)}.csv`;
+
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Reset button after a short delay
+    setTimeout(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+        alertDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            ${type.charAt(0).toUpperCase() + type.slice(1)} data exported successfully!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        // Insert alert after the export section
+        const exportSection = document.querySelector('.card-body');
+        exportSection.appendChild(alertDiv);
+
+        // Auto-hide alert after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }, 1000);
+}
+
+function deleteAccount() {
+    alert('Account deletion feature will be implemented in a future update.');
+}
+
+// Load export statistics on page load
+function loadExportStats() {
+    fetch('/export/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading export stats:', data.error);
+                return;
+            }
+
+            // Update statistics display
+            document.getElementById('billsCount').textContent = data.bills.count;
+            document.getElementById('expensesCount').textContent = data.expenses.count;
+            document.getElementById('workCount').textContent = data.work.count;
+            document.getElementById('totalRecords').textContent = data.summary.total_records;
+
+            // Show the stats card
+            document.getElementById('exportStats').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error loading export stats:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteConfirmation = document.getElementById('deleteConfirmation');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+    deleteConfirmation.addEventListener('input', function() {
+        if (this.value === 'DELETE') {
+            confirmDeleteBtn.disabled = false;
+        } else {
+            confirmDeleteBtn.disabled = true;
+        }
+    });
+
+    // Load export statistics
+    loadExportStats();
+});
+</script>
+{% endblock %}
