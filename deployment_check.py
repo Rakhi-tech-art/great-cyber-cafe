@@ -60,13 +60,11 @@ def check_dependencies():
         ('wtforms', 'WTForms'),
         ('werkzeug', 'Werkzeug'),
         ('reportlab', 'ReportLab'),
-        ('PIL', 'Pillow'),
+
         ('dotenv', 'python-dotenv'),
         ('requests', 'requests'),
         ('pywhatkit', 'pywhatkit'),
-        ('matplotlib', 'matplotlib'),
-        ('plotly', 'plotly'),
-        ('pandas', 'pandas'),
+
         ('email_validator', 'email-validator'),
         ('bcrypt', 'bcrypt'),
         ('gunicorn', 'gunicorn'),

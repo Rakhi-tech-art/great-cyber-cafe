@@ -4,8 +4,14 @@ from models import db
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 import os
-from PIL import Image
 from routes.auth import admin_required
+
+# Try to import PIL, but make it optional for deployment
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -60,20 +66,24 @@ def profile_settings():
                 file_path = os.path.join(UPLOAD_FOLDER, filename)
                 file.save(file_path)
 
-                # Resize image
-                try:
-                    with Image.open(file_path) as img:
-                        # Convert to RGB if necessary (for JPEG compatibility)
-                        if img.mode in ('RGBA', 'LA', 'P'):
-                            img = img.convert('RGB')
-                        img.thumbnail((300, 300), Image.LANCZOS)
-                        img.save(file_path, 'JPEG', quality=85)
-                except Exception as e:
-                    # Clean up the uploaded file if processing fails
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                    flash(f'Error processing image: {str(e)}', 'error')
-                    return redirect(url_for('settings.profile_settings'))
+                # Resize image (only if PIL is available)
+                if PIL_AVAILABLE:
+                    try:
+                        with Image.open(file_path) as img:
+                            # Convert to RGB if necessary (for JPEG compatibility)
+                            if img.mode in ('RGBA', 'LA', 'P'):
+                                img = img.convert('RGB')
+                            img.thumbnail((300, 300), Image.LANCZOS)
+                            img.save(file_path, 'JPEG', quality=85)
+                    except Exception as e:
+                        # Clean up the uploaded file if processing fails
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                        flash(f'Error processing image: {str(e)}', 'error')
+                        return redirect(url_for('settings.profile_settings'))
+                else:
+                    # If PIL is not available, just save the file as-is
+                    flash('Image uploaded successfully (resizing not available)', 'info')
 
                 # Store relative path for web access
                 current_user.profile_photo = file_path
