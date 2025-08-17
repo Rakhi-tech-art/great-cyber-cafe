@@ -66,7 +66,7 @@ def profile_settings():
                         # Convert to RGB if necessary (for JPEG compatibility)
                         if img.mode in ('RGBA', 'LA', 'P'):
                             img = img.convert('RGB')
-                        img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+                        img.thumbnail((300, 300), Image.LANCZOS)
                         img.save(file_path, 'JPEG', quality=85)
                 except Exception as e:
                     # Clean up the uploaded file if processing fails

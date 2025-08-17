@@ -25,13 +25,13 @@ Flask-Mail==0.9.1
 WTForms==3.0.1
 Werkzeug==2.3.7
 reportlab==4.0.4
-Pillow==9.5.0
+Pillow==8.4.0
 python-dotenv==1.0.0
 requests==2.31.0
 pywhatkit==5.4
-matplotlib==3.7.2
-plotly==5.17.0
-pandas==2.1.1
+matplotlib==3.5.3
+plotly==5.15.0
+pandas==1.5.3
 email-validator==2.0.0
 bcrypt==4.0.1
 gunicorn==21.2.0
@@ -45,7 +45,7 @@ web: gunicorn app:app
 
 **runtime.txt**:
 ```
-python-3.11.9
+python-3.10.12
 ```
 
 ## Step 2: Deploy to Render
