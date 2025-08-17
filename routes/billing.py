@@ -5,9 +5,16 @@ from datetime import datetime, timedelta
 import os
 from utils.pdf_generator import generate_bill_pdf
 from utils.email_sender import send_bill_email
-from utils.whatsapp_sender import send_whatsapp_message
 from sqlalchemy import and_
 from routes.auth import admin_required
+
+# Try to import WhatsApp functionality, but make it optional
+try:
+    from utils.whatsapp_sender import send_whatsapp_message
+    WHATSAPP_AVAILABLE = True
+except ImportError:
+    WHATSAPP_AVAILABLE = False
+    send_whatsapp_message = None
 
 billing_bp = Blueprint('billing', __name__)
 
@@ -235,14 +242,18 @@ def send_bill(id):
             messages.append(f'Email failed: {str(e)}')
     
     if send_whatsapp and bill.customer.whatsapp:
-        try:
-            pdf_path = generate_bill_pdf(bill)
-            send_whatsapp_message(bill, pdf_path)
-            bill.whatsapp_sent = True
-            messages.append('WhatsApp message sent successfully')
-        except Exception as e:
+        if not WHATSAPP_AVAILABLE:
             success = False
-            messages.append(f'WhatsApp failed: {str(e)}')
+            messages.append('WhatsApp functionality is not available in this environment')
+        else:
+            try:
+                pdf_path = generate_bill_pdf(bill)
+                send_whatsapp_message(bill, pdf_path)
+                bill.whatsapp_sent = True
+                messages.append('WhatsApp message sent successfully')
+            except Exception as e:
+                success = False
+                messages.append(f'WhatsApp failed: {str(e)}')
     
     if success:
         bill.status = 'sent'

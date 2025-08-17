@@ -63,7 +63,7 @@ def check_dependencies():
 
         ('dotenv', 'python-dotenv'),
         ('requests', 'requests'),
-        ('pywhatkit', 'pywhatkit'),
+
 
         ('email_validator', 'email-validator'),
         ('bcrypt', 'bcrypt'),

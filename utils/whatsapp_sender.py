@@ -1,10 +1,22 @@
-import pywhatkit as pwk
 import os
 from datetime import datetime, timedelta
+
+# Try to import pywhatkit, but make it optional for deployment
+try:
+    import pywhatkit as pwk
+    PYWHATKIT_AVAILABLE = True
+except (ImportError, KeyError) as e:
+    # KeyError occurs when DISPLAY environment variable is missing (headless servers)
+    PYWHATKIT_AVAILABLE = False
+    pwk = None
 from flask import current_app
 
 def send_whatsapp_message(bill, pdf_path=None):
     """Send WhatsApp message with bill details"""
+
+    # Check if WhatsApp functionality is available
+    if not PYWHATKIT_AVAILABLE:
+        raise ValueError("WhatsApp functionality is not available in this environment (pywhatkit not installed or no display)")
 
     # Validate WhatsApp number
     if not bill.customer.whatsapp:
